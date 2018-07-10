@@ -1,6 +1,7 @@
 package ru.geekbrains.stargame.sprite;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
 
 import ru.geekbrains.stargame.base.Sprite;
 import ru.geekbrains.stargame.math.Rect;
@@ -16,4 +17,6 @@ public class Background extends Sprite {
         setHeightProportion(worldBounds.getHeight());
         pos.set(worldBounds.pos);
     }
+
+
 }

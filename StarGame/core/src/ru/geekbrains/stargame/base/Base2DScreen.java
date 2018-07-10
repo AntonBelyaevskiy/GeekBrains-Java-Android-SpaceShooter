@@ -141,7 +141,12 @@ public class Base2DScreen implements Screen, InputProcessor {
 
     @Override
     public boolean mouseMoved(int screenX, int screenY) {
+        touch.set(screenX, screenBounds.getHeight() - screenY).mul(screenToWorld);
+        mouseMoved(touch);
         return false;
+    }
+
+    public void mouseMoved(Vector2 touch) {
     }
 
     @Override

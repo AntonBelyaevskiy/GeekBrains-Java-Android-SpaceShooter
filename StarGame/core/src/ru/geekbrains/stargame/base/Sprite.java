@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
 import ru.geekbrains.stargame.math.Rect;
+import ru.geekbrains.stargame.utils.Regions;
 
 public class Sprite extends Rect {
 
@@ -21,6 +22,13 @@ public class Sprite extends Rect {
         regions[0] = region;
     }
 
+    public Sprite(TextureRegion region, int rows, int columns, int frames) {
+        if (region == null) {
+            throw new NullPointerException();
+        }
+        regions = Regions.split(region, rows, columns, frames);
+    }
+
     public void draw(SpriteBatch batch) {
         batch.draw(
                 regions[frame],
@@ -32,13 +40,13 @@ public class Sprite extends Rect {
         );
     }
 
-    public void setHeightProportion(float hight){
+    public void setHeightProportion(float hight) {
         setHeight(hight);
-        float aspect = regions[frame].getRegionWidth() / (float)regions[frame].getRegionHeight();
+        float aspect = regions[frame].getRegionWidth() / (float) regions[frame].getRegionHeight();
         setWidth(hight * aspect);
     }
 
-    public void resize(Rect worldBounds){
+    public void resize(Rect worldBounds) {
 
     }
 
@@ -50,7 +58,7 @@ public class Sprite extends Rect {
 
     }
 
-    public void update(float delta){
+    public void update(float delta) {
 
     }
 
