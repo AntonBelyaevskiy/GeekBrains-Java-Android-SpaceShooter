@@ -1,0 +1,62 @@
+package ru.geekbrains.stargame.sprite;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
+
+import ru.geekbrains.stargame.base.Ship;
+import ru.geekbrains.stargame.math.Rect;
+import ru.geekbrains.stargame.pools.BulletPool;
+
+public class Enemy extends Ship {
+
+    private Sound sound = Gdx.audio.newSound(Gdx.files.internal("sounds/ph.wav"));
+
+    private Vector2 v0 = new Vector2();
+
+    public Enemy(BulletPool bulletPool, Rect worldBounds) {
+        super(bulletPool, worldBounds);
+        this.v.set(v0);
+    }
+
+    @Override
+    public void update(float delta) {
+        pos.mulAdd(v, delta);
+        reloadTimer += delta;
+        if (reloadTimer >= reloadInterval) {
+            reloadTimer = 0f;
+            if (!isOutside(worldBounds))
+                if(pos.y > -0.25) // немного поднял границу возможности стрелять, если враг сравнялся с игроком, уже незачем стрелять
+                shoot();
+        }
+    }
+
+    public void set(
+            TextureRegion[] regions,
+            Vector2 v0,
+            TextureRegion bulletRegion,
+            float bulletHeight,
+            float bulletVY,
+            int bulletDamage,
+            float reloadInterval,
+            float height
+    ) {
+        this.regions = regions;
+        this.v0.set(v0);
+        this.bulletRegion = bulletRegion;
+        this.bulletHeight = bulletHeight;
+        this.bulletV.set(0f, bulletVY);
+        this.bulletDamage = bulletDamage;
+        this.reloadInterval = reloadInterval;
+        setHeightProportion(height);
+        reloadTimer = reloadInterval;
+        v.set(v0);
+    }
+
+    @Override
+    protected void shoot() {
+        super.shoot();
+        sound.play();
+    }
+}

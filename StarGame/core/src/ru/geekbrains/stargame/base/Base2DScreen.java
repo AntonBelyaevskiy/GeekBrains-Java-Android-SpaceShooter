@@ -12,16 +12,12 @@ import com.badlogic.gdx.math.Vector2;
 import ru.geekbrains.stargame.math.MatrixUtils;
 import ru.geekbrains.stargame.math.Rect;
 
-/**
- * Базовый класс экрана
- */
-
 public class Base2DScreen implements Screen, InputProcessor {
     protected Game game;
     protected SpriteBatch batch;
 
     private Rect screenBounds;
-    private Rect worldBounds;
+    protected Rect worldBounds;
     private Rect glBounds;
 
     protected Matrix4 worldToGl;

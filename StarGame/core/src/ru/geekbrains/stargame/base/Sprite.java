@@ -13,6 +13,11 @@ public class Sprite extends Rect {
     protected float scale = 1f;
     protected TextureRegion[] regions;
     protected int frame;
+    private boolean isDestroyed;
+
+    public Sprite() {
+
+    }
 
     public Sprite(TextureRegion region) {
         if (region == null) {
@@ -76,5 +81,17 @@ public class Sprite extends Rect {
 
     public void setScale(float scale) {
         this.scale = scale;
+    }
+
+    public void destroy(){
+        this.isDestroyed = true;
+    }
+
+    public void flushDestrioy(){
+        this.isDestroyed = false;
+    }
+
+    public boolean isDestroyed() {
+        return isDestroyed;
     }
 }

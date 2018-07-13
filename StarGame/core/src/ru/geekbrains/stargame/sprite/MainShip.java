@@ -1,46 +1,63 @@
 package ru.geekbrains.stargame.sprite;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
-import ru.geekbrains.stargame.base.ActionListener;
-import ru.geekbrains.stargame.base.Sprite;
+import ru.geekbrains.stargame.base.Ship;
 import ru.geekbrains.stargame.math.Rect;
+import ru.geekbrains.stargame.pools.BulletPool;
 
-public class MainShip extends Sprite {
+public class MainShip extends Ship {
+
+    private Sound sound = Gdx.audio.newSound(Gdx.files.internal("sounds/piu.wav"));
 
     public static final float SHIP_HEIGHT = 0.15f;
-    public static final float BOTTOM_MARGIN = 0.05f;
+    public static final float BOTTOM_MARGIN = 0.04f;
+    private static final int INVALID_POINTER = -1;
 
-    private Vector2 v = new Vector2();
-    private Vector2 stop = new Vector2();
+
     private Vector2 v0 = new Vector2(0.5f, 0f);
 
     private boolean pressLeft;
     private boolean pressRight;
-    private boolean mouseControl;
 
-    private Rect worldBounds;
 
-    public MainShip(TextureAtlas atlas) {
+    private int leftPointer = INVALID_POINTER;
+    private int rightPointer = INVALID_POINTER;
+
+    private boolean autoMode; //автоматический режим стрельбы включается кнопкой Q
+
+    public MainShip(TextureAtlas atlas, BulletPool bulletPool) {
         super(atlas.findRegion("main_ship"), 1, 2, 2);
         setHeightProportion(SHIP_HEIGHT);
+        this.bulletPool = bulletPool;
+        this.bulletRegion = atlas.findRegion("bulletMainShip");
+        this.bulletHeight = 0.013f;
+        this.bulletV.set(0, 0.8f);
+        this.bulletDamage = 1;
+        this.reloadInterval = 0.2f;
     }
 
     @Override
     public void resize(Rect worldBounds) {
+        super.resize(worldBounds);
         setBottom(worldBounds.getBottom() + BOTTOM_MARGIN);
-        this.worldBounds = worldBounds;
     }
 
     @Override
     public void update(float delta) {
         pos.mulAdd(v, delta);
+        reloadTimer += delta;
+        if(autoMode){
+            if(reloadTimer >= reloadInterval){
+                reloadTimer = 0f;
+                shoot();
+            }
+        }
         checkAndHandleBounds();
-        if (mouseControl)
-            checkStopOnCursor();
     }
 
 
@@ -55,6 +72,17 @@ public class MainShip extends Sprite {
             case Input.Keys.RIGHT:
                 pressRight = true;
                 moveRight();
+                break;
+            case Input.Keys.W:
+            case Input.Keys.UP:
+                shoot();
+                break;
+            case Input.Keys.Q:
+                if(autoMode){
+                    autoMode = false;
+                    break;
+                }
+                autoMode = true;
                 break;
         }
     }
@@ -82,28 +110,40 @@ public class MainShip extends Sprite {
         }
     }
 
-
     @Override
     public void touchDown(Vector2 touch, int pointer) {
-        mouseControl = true;
-        if (touch.y > getBottom() && touch.y < getTop()) {
-            stop.set(touch);
-            if (touch.x > getRight()) {
-                pressRight = true;
-                pressLeft = false;
-                moveRight();
+        if (touch.x < worldBounds.pos.x) {
+            if (leftPointer != INVALID_POINTER) {
+                return;
             }
-            if (touch.x < getLeft()) {
-                pressLeft = true;
-                pressRight = false;
-                moveLeft();
+            leftPointer = pointer;
+            moveLeft();
+        } else {
+            if (rightPointer != INVALID_POINTER) {
+                return;
             }
+            rightPointer = pointer;
+            moveRight();
         }
     }
 
     @Override
     public void touchUp(Vector2 touch, int pointer) {
-        mouseControl = false;
+        if (pointer == leftPointer) {
+            leftPointer = INVALID_POINTER;
+            if (rightPointer != INVALID_POINTER) {
+                moveRight();
+            } else {
+                stop();
+            }
+        } else if (pointer == rightPointer) {
+            rightPointer = INVALID_POINTER;
+            if (leftPointer != INVALID_POINTER) {
+                moveLeft();
+            } else {
+                stop();
+            }
+        }
         stop();
     }
 
@@ -120,31 +160,19 @@ public class MainShip extends Sprite {
     }
 
     private void checkAndHandleBounds() {
-        if (getRight() >= worldBounds.getRight()) setRight(worldBounds.getRight());
-        if (getLeft() <= worldBounds.getLeft()) setLeft(worldBounds.getLeft());
+        if (getRight() > worldBounds.getRight()) {
+            setRight(worldBounds.getRight());
+            stop();
+        }
+        if (getLeft() < worldBounds.getLeft()) {
+            setLeft(worldBounds.getLeft());
+            stop();
+        }
     }
 
-    private void checkStopOnCursor() {
-        if (pressRight)
-            if (pos.x >= stop.x) stop();
-        if (pressLeft)
-            if (pos.x <= stop.x) stop();
-    }
-
-
-    public void mouseMoved(Vector2 touch) {
-//        if (touch.y > getBottom() && touch.y < getTop()) {
-//            stop.set(touch);
-//            if (touch.x > getRight()) {
-//                pressRight = true;
-//                pressLeft = false;
-//                moveRight();
-//            }
-//            if (touch.x < getLeft()) {
-//                pressLeft = true;
-//                pressRight = false;
-//                moveLeft();
-//            }
-//        }
+    @Override
+    protected void shoot() {
+        super.shoot();
+        sound.play();
     }
 }
