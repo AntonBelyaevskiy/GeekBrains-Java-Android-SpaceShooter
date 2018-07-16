@@ -2,7 +2,6 @@ package ru.geekbrains.stargame.screen;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -21,21 +20,15 @@ import ru.geekbrains.stargame.sprite.ButtonExit;
 import ru.geekbrains.stargame.sprite.ButtonPlay;
 import ru.geekbrains.stargame.sprite.Star;
 
-/**
- * Экран меню
- */
-
 public class MenuScreen extends Base2DScreen implements ActionListener{
 
-    public static final int STARS_NUM = 30;
-
-    public static final float PRESS_SCALE = 0.9f;
-    public static final float BUTTON_HEIGHT = 0.15f;
+    private static final int STARS_NUM = 100;
+    private static final float PRESS_SCALE = 0.9f;
+    private static final float START_BUTTON_HEIGHT = 0.15f;
+    private static final float EXIT_BUTTON_HEIGHT = 0.125f;
 
     private Background background;
     private Texture bg;
-
-    private Texture sg;
 
     private TextureAtlas atlas;
     private List<Star> stars;
@@ -53,8 +46,6 @@ public class MenuScreen extends Base2DScreen implements ActionListener{
         bg = new Texture("textures/bg.png");
         background = new Background(new TextureRegion(bg));
 
-        sg = new Texture("textures/stargame.png");
-
         atlas = new TextureAtlas("textures/menuAtlas.tpack");
         TextureRegion starRegion = atlas.findRegion("star");
         stars = new ArrayList<Star>();
@@ -63,10 +54,10 @@ public class MenuScreen extends Base2DScreen implements ActionListener{
         }
 
         buttonExit = new ButtonExit(atlas, this, PRESS_SCALE);
-        buttonExit.setHeightProportion(BUTTON_HEIGHT);
+        buttonExit.setHeightProportion(EXIT_BUTTON_HEIGHT);
 
         buttonPlay = new ButtonPlay(atlas, this, PRESS_SCALE);
-        buttonPlay.setHeightProportion(BUTTON_HEIGHT);
+        buttonPlay.setHeightProportion(START_BUTTON_HEIGHT);
 
     }
 
@@ -83,7 +74,7 @@ public class MenuScreen extends Base2DScreen implements ActionListener{
         }
     }
 
-    public void draw() {
+    private void draw() {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -94,7 +85,6 @@ public class MenuScreen extends Base2DScreen implements ActionListener{
         }
         buttonExit.draw(batch);
         buttonPlay.draw(batch);
-        batch.draw(sg, -0.3f,-0.2f,0.6f,0.6f);
         batch.end();
     }
 

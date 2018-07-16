@@ -20,6 +20,7 @@ public class Background extends Sprite {
 
     public Background(TextureRegion region) {
         super(region);
+        this.top = false;
     }
 
     @Override
@@ -41,4 +42,5 @@ public class Background extends Sprite {
     private void checkAndHandleBounds() {
         if (getTop() < worldBounds.getBottom()+0.01f) setBottom(worldBounds.getTop());
     }
+
 }

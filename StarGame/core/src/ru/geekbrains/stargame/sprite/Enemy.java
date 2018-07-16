@@ -1,6 +1,5 @@
 package ru.geekbrains.stargame.sprite;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
@@ -8,27 +7,53 @@ import com.badlogic.gdx.math.Vector2;
 import ru.geekbrains.stargame.base.Ship;
 import ru.geekbrains.stargame.math.Rect;
 import ru.geekbrains.stargame.pools.BulletPool;
+import ru.geekbrains.stargame.pools.ExplosionPool;
 
 public class Enemy extends Ship {
 
-    private Sound sound = Gdx.audio.newSound(Gdx.files.internal("sounds/ph.wav"));
+    private enum State {DESCENT, FIGHT}
+
+    private MainShip mainShip;
+
+    private State state;
 
     private Vector2 v0 = new Vector2();
+    private Vector2 descentV = new Vector2(0, -0.25f);
 
-    public Enemy(BulletPool bulletPool, Rect worldBounds) {
-        super(bulletPool, worldBounds);
+    private int boomDamagePower;
+
+    public Enemy(BulletPool bulletPool, Rect worldBounds, ExplosionPool explosionPool, MainShip mainShip, Sound sound) {
+        super(bulletPool, worldBounds, explosionPool, sound);
         this.v.set(v0);
+        this.state = State.DESCENT;
+        this.v.set(descentV);
+        this.mainShip = mainShip;
     }
 
     @Override
     public void update(float delta) {
+        super.update(delta);
         pos.mulAdd(v, delta);
-        reloadTimer += delta;
-        if (reloadTimer >= reloadInterval) {
-            reloadTimer = 0f;
-            if (!isOutside(worldBounds))
-                if(pos.y > -0.25) // немного поднял границу возможности стрелять, если враг сравнялся с игроком, уже незачем стрелять
-                shoot();
+
+        switch (state) {
+            case DESCENT:
+                if (getTop() <= worldBounds.getTop() - getHalfHeight() / 2) {
+                    v.set(v0);
+                    state = State.FIGHT;
+                }
+                break;
+            case FIGHT:
+                reloadTimer += delta;
+                if (reloadTimer >= reloadInterval) {
+                    reloadTimer = 0f;
+                    shoot();
+                }
+                if (getBottom() < worldBounds.getBottom()) {
+                    mainShip.damage(bulletDamage);
+                    boom();
+                    destroy();
+                }
+                break;
         }
     }
 
@@ -40,7 +65,9 @@ public class Enemy extends Ship {
             float bulletVY,
             int bulletDamage,
             float reloadInterval,
-            float height
+            float height,
+            int hp,
+            int boomDamagePower
     ) {
         this.regions = regions;
         this.v0.set(v0);
@@ -51,12 +78,25 @@ public class Enemy extends Ship {
         this.reloadInterval = reloadInterval;
         setHeightProportion(height);
         reloadTimer = reloadInterval;
-        v.set(v0);
+        this.v.set(descentV);
+        this.state = State.DESCENT;
+        this.hp = hp;
+        this.boomDamagePower = boomDamagePower;
     }
 
     @Override
     protected void shoot() {
         super.shoot();
-        sound.play();
+    }
+
+    public boolean isBulletCollision(Rect bullet) {
+        return !(bullet.getRight() < getLeft()
+                || bullet.getLeft() > getRight()
+                || bullet.getBottom() > getTop()
+                || bullet.getTop() < pos.y);
+    }
+
+    public int getBoomDamagePower() {
+        return boomDamagePower;
     }
 }
