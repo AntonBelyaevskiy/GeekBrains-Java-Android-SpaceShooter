@@ -15,7 +15,7 @@ public class Background extends Sprite {
     public Background(TextureRegion region, boolean top) {
         super(region);
         this.top = top;
-        v.set(0, -0.4f);
+        v.set(0, -0.3f);
     }
 
     public Background(TextureRegion region) {
@@ -40,6 +40,8 @@ public class Background extends Sprite {
     }
 
     private void checkAndHandleBounds() {
-        if (getTop() < worldBounds.getBottom()+0.01f) setBottom(worldBounds.getTop());
+        if (getTop() < worldBounds.getBottom()) setBottom(worldBounds.getTop());
     }
+
+
 }

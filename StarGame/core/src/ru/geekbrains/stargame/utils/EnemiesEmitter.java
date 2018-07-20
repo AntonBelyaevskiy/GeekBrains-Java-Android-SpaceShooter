@@ -78,7 +78,7 @@ public class EnemiesEmitter {
                 generateInterval -= 1f;
             }
             if(stage == 10 || stage == 20){
-                generateInterval = 4f;
+                generateInterval = 3.9f;
             }
             newStageForAddHp++;
         }

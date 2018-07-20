@@ -29,6 +29,7 @@ import ru.geekbrains.stargame.sprite.Bullet;
 import ru.geekbrains.stargame.sprite.ButtonNewGame;
 import ru.geekbrains.stargame.sprite.Enemy;
 import ru.geekbrains.stargame.sprite.GameMessage;
+import ru.geekbrains.stargame.sprite.HpView;
 import ru.geekbrains.stargame.sprite.MainShip;
 import ru.geekbrains.stargame.sprite.Star;
 import ru.geekbrains.stargame.utils.AsteroidEmitter;
@@ -46,10 +47,12 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     private static final float HEIGHT_GAME_OVER_BUTTON = 0.12f;
     private static final float BUTTON_MARGIN_GAME_OVER_BUTTON = -0.5f;
 
-    private Background background1;
-    private Background background2;
+    private Background background;
+    private Background cloud1;
+    private Background cloud2;
 
     private Texture bg;
+    private Texture cl;
 
     private TextureAtlas atlasText;
     private TextureAtlas mainShipAtlas;
@@ -84,6 +87,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     private StringBuilder sbStage = new StringBuilder();
 
     private int frags;
+    private HpView hpView;
 
     GameScreen(Game game) {
         super(game);
@@ -94,8 +98,10 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     public void show() {
         super.show();
         bg = new Texture("textures/bg.png");
-        background1 = new Background(new TextureRegion(bg), true);
-        background2 = new Background(new TextureRegion(bg), false);
+        cl = new Texture("textures/cloud.png");
+        background = new Background(new TextureRegion(bg));
+        cloud1 = new Background(new TextureRegion(cl), true);
+        cloud2 = new Background(new TextureRegion(cl), false);
 
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("sounds/fon.mp3"));
         backgroundMusic.setLooping(true);
@@ -132,6 +138,8 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         font = new Font("font/font.fnt", "font/font.png");
         font.setWorldSize(FONT_SIZE);
 
+        hpView = new HpView(asteroidAtlas.findRegion("ryg"), 1, 4, 4, mainShip, worldBounds);
+
         startNewGame();
     }
 
@@ -139,9 +147,9 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         sbFrags.setLength(0);
         sbHp.setLength(0);
         sbStage.setLength(0);
-        font.draw(batch, sbFrags.append("Frags: ").append(frags), worldBounds.getLeft(), worldBounds.getTop() - 0.01f);
-        font.draw(batch, sbHp.append("HP: ").append(mainShip.getHp()), worldBounds.pos.x, worldBounds.getTop() - 0.01f, Align.center);
-        font.draw(batch, sbStage.append("Stage: ").append(enemiesEmitter.getStage()), worldBounds.getRight(), worldBounds.getTop() - 0.01f, Align.right);
+        font.draw(batch, sbFrags.append("Frags: ").append(frags), worldBounds.getLeft(), worldBounds.getTop() - 0.05f);
+        font.draw(batch, sbHp.append("HP: ").append(mainShip.getHp()), worldBounds.getLeft(), worldBounds.getTop() - 0.01f);
+        font.draw(batch, sbStage.append("Stage: ").append(enemiesEmitter.getStage()), worldBounds.getRight(), worldBounds.getTop() - 0.05f, Align.right);
     }
 
     @Override
@@ -160,12 +168,13 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         bulletPool.updateActiveSprites(delta);
         switch (state) {
             case PLAYING:
-                background1.update(delta);
-                background2.update(delta);
+                cloud1.update(delta);
+                cloud2.update(delta);
                 mainShip.update(delta, frags);
                 enemyPool.updateActiveSprites(delta);
                 enemiesEmitter.generateEnemies(delta, frags);
                 asteroidEmitter.generateAsteroid(delta);
+                hpView.update(delta);
                 if (mainShip.isDestroyed()) {
                     state = State.GAME_OVER;
                     backgroundMusic.stop();
@@ -183,8 +192,9 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
 
-        background1.draw(batch);
-        background2.draw(batch);
+        background.draw(batch);
+        cloud1.draw(batch);
+        cloud2.draw(batch);
         for (Star star : stars) {
             star.draw(batch);
         }
@@ -195,6 +205,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         switch (state) {
             case PLAYING:
                 mainShip.draw(batch);
+                hpView.draw(batch);
                 break;
             case GAME_OVER:
                 gameOver.draw(batch);
@@ -209,12 +220,14 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     @Override
     public void resize(Rect worldBounds) {
         super.resize(worldBounds);
-        background1.resize(worldBounds);
-        background2.resize(worldBounds);
+        background.resize(worldBounds);
+        cloud1.resize(worldBounds);
+        cloud2.resize(worldBounds);
 
         for (Star star : stars) {
             star.resize(worldBounds);
         }
+        hpView.resize(worldBounds);
         mainShip.resize(worldBounds);
     }
 
@@ -341,28 +354,28 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         }
 
         for (Bullet bullet : bulletList) {
-                if (bullet.isDestroyed()) {
-                    continue;
+            if (bullet.isDestroyed()) {
+                continue;
+            }
+            if (bullet.getOwner() == mainShip) {
+                for (Asteroid asteroid : asteroidList) {
+                    if (asteroid.isBulletMainShipCollision(bullet)) {
+                        bullet.boom();
+                        bullet.destroy();
+                    }
                 }
-                if (bullet.getOwner() == mainShip) {
-                    for(Asteroid asteroid : asteroidList){
-                        if (asteroid.isBulletMainShipCollision(bullet)) {
+            }
+
+            for (Enemy enemy : enemyList) {
+                if (bullet.getOwner() == enemy) {
+                    for (Asteroid asteroid : asteroidList) {
+                        if (asteroid.isBulletEnemyCollision(bullet)) {
                             bullet.boom();
                             bullet.destroy();
                         }
                     }
                 }
-
-                for(Enemy enemy : enemyList){
-                    if (bullet.getOwner() == enemy) {
-                        for(Asteroid asteroid : asteroidList){
-                            if (asteroid.isBulletEnemyCollision(bullet)) {
-                                bullet.boom();
-                                bullet.destroy();
-                            }
-                        }
-                    }
-                }
+            }
         }
     }
 
