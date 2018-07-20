@@ -18,6 +18,7 @@ import ru.geekbrains.stargame.math.Rnd;
 import ru.geekbrains.stargame.sprite.Background;
 import ru.geekbrains.stargame.sprite.ButtonExit;
 import ru.geekbrains.stargame.sprite.ButtonPlay;
+import ru.geekbrains.stargame.sprite.GameMessage;
 import ru.geekbrains.stargame.sprite.Star;
 
 public class MenuScreen extends Base2DScreen implements ActionListener{
@@ -27,14 +28,21 @@ public class MenuScreen extends Base2DScreen implements ActionListener{
     private static final float START_BUTTON_HEIGHT = 0.15f;
     private static final float EXIT_BUTTON_HEIGHT = 0.125f;
 
+    private static final float HEIGHT_STAR_GAME = 0.1f;
+    private static final float BUTTON_MARGIN_STAR_GAME = -0.5f;
+
     private Background background;
     private Texture bg;
 
-    private TextureAtlas atlas;
+    private TextureAtlas atlasText;
+    private TextureAtlas atlasMain;
     private List<Star> stars;
 
     private ButtonExit buttonExit;
     private ButtonPlay buttonPlay;
+
+    private GameMessage starGame;
+
 
     public MenuScreen(Game game) {
         super(game);
@@ -46,17 +54,20 @@ public class MenuScreen extends Base2DScreen implements ActionListener{
         bg = new Texture("textures/bg.png");
         background = new Background(new TextureRegion(bg));
 
-        atlas = new TextureAtlas("textures/menuAtlas.tpack");
-        TextureRegion starRegion = atlas.findRegion("star");
+        atlasMain = new TextureAtlas("textures/menuAtlas.tpack");
+        atlasText = new TextureAtlas("textures/text.pack");
+        TextureRegion starRegion = atlasMain.findRegion("star");
         stars = new ArrayList<Star>();
         for (int i = 0; i < STARS_NUM; i++) {
             stars.add(new Star(starRegion, Rnd.nextFloat(-0.005f, 0.005f), Rnd.nextFloat(-0.5f, -0.1f), Rnd.nextFloat(0.0008f, 0.009f)));
         }
 
-        buttonExit = new ButtonExit(atlas, this, PRESS_SCALE);
+        starGame = new GameMessage(atlasText.findRegion("star_game"), HEIGHT_STAR_GAME, BUTTON_MARGIN_STAR_GAME);
+
+        buttonExit = new ButtonExit(atlasMain, this, PRESS_SCALE);
         buttonExit.setHeightProportion(EXIT_BUTTON_HEIGHT);
 
-        buttonPlay = new ButtonPlay(atlas, this, PRESS_SCALE);
+        buttonPlay = new ButtonPlay(atlasMain, this, PRESS_SCALE);
         buttonPlay.setHeightProportion(START_BUTTON_HEIGHT);
 
     }
@@ -85,13 +96,15 @@ public class MenuScreen extends Base2DScreen implements ActionListener{
         }
         buttonExit.draw(batch);
         buttonPlay.draw(batch);
+        starGame.draw(batch);
         batch.end();
     }
 
     @Override
     public void dispose() {
         bg.dispose();
-        atlas.dispose();
+        atlasMain.dispose();
+        atlasText.dispose();
         super.dispose();
     }
 
@@ -132,4 +145,3 @@ public class MenuScreen extends Base2DScreen implements ActionListener{
         }
     }
 }
-

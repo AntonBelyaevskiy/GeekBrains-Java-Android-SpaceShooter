@@ -1,6 +1,5 @@
 package ru.geekbrains.stargame.base;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
@@ -42,8 +41,9 @@ public class Ship extends Sprite {
         this.shootSound = sound;
     }
 
-    public Ship(TextureRegion region, int rows, int columns, int frames, Sound sound) {
+    public Ship(TextureRegion region, int rows, int columns, int frames, Rect worldBounds, Sound sound) {
         super(region, rows, columns, frames);
+        this.worldBounds = worldBounds;
         this.shootSound = sound;
     }
 
@@ -51,8 +51,12 @@ public class Ship extends Sprite {
     public void update(float delta) {
         super.update(delta);
         damageAnimateTimer += delta;
-        if(damageAnimateTimer >= DAMAGE_ANIMATE_INTERVAL){
-            frame = 0;
+        if (damageAnimateTimer >= DAMAGE_ANIMATE_INTERVAL) {
+            if (frame < regions.length - 1) {
+                frame++;
+            } else {
+                frame = 0;
+            }
         }
     }
 
@@ -61,22 +65,23 @@ public class Ship extends Sprite {
         this.worldBounds = worldBounds;
     }
 
-    protected void shoot(){
+    protected void shoot() {
         Bullet bullet = bulletPool.obtain();
         bullet.set(this, bulletRegion, pos, bulletV, bulletHeight, worldBounds, bulletDamage);
         shootSound.play();
     }
 
-    public void boom(){
+    public void boom() {
         Explosion explosion = explosionPool.obtain();
-        explosion.set(getHeight()*1.5f, pos);
+        explosion.set(getHeight() * 1.5f, pos);
+        hp = 0;
     }
 
-    public void damage(int damage){
-        frame = 1;
+    public void damage(int damage) {
+        frame = regions.length - 1;
         damageAnimateTimer = 0f;
         hp -= damage;
-        if(hp <= 0){
+        if (hp <= 0) {
             boom();
             destroy();
         }
@@ -84,5 +89,13 @@ public class Ship extends Sprite {
 
     public int getHp() {
         return hp;
+    }
+
+    public boolean isAsteroidCollision(Rect asteroid) {
+        return !(getLeft() > (asteroid.getRight() - getHalfWidth()/2)
+                || getRight() < (asteroid.getLeft() + getHalfWidth()/2)
+                || getTop() < (asteroid.getBottom() + getHalfHeight()/2)
+                || getBottom() > (asteroid.getTop() - getHalfHeight()/2)
+        );
     }
 }

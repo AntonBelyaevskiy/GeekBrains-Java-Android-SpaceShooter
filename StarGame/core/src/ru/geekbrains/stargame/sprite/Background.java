@@ -42,5 +42,4 @@ public class Background extends Sprite {
     private void checkAndHandleBounds() {
         if (getTop() < worldBounds.getBottom()+0.01f) setBottom(worldBounds.getTop());
     }
-
 }

@@ -8,12 +8,13 @@ import ru.geekbrains.stargame.math.Rect;
 
 public class ButtonNewGame extends ScaledTouchUpButton {
 
-    public ButtonNewGame(TextureAtlas atlas, ActionListener actionListener, float pressScale) {
-        super(atlas.findRegion("button_new_game"), actionListener, pressScale);
-    }
+    private static final float HEIGHT = 0.1f;
+    private static final float BOTTOM_MARGIN = 0.07f;
+    private static final float PRESS_SCALE = 0.9f;
 
-    @Override
-    public void resize(Rect worldBounds) {
-        setBottom(worldBounds.getBottom() + 0.07f);
+    public ButtonNewGame(TextureAtlas atlas, ActionListener actionListener, Rect worldBounds) {
+        super(atlas.findRegion("new_game"), actionListener, PRESS_SCALE);
+        setHeightProportion(HEIGHT);
+        setBottom(worldBounds.getBottom() + BOTTOM_MARGIN);
     }
 }

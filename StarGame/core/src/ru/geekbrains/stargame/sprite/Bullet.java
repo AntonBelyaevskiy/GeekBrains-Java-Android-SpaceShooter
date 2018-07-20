@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.Vector2;
 
 import ru.geekbrains.stargame.base.Sprite;
 import ru.geekbrains.stargame.math.Rect;
+import ru.geekbrains.stargame.pools.ExplosionPool;
 
 public class Bullet extends Sprite {
 
@@ -13,8 +14,11 @@ public class Bullet extends Sprite {
     private int damage;
     private Object owner;
 
-    public Bullet() {
+    private ExplosionPool explosionPool;
+
+    public Bullet(ExplosionPool explosionPool) {
         regions = new TextureRegion[1];
+        this.explosionPool = explosionPool;
     }
 
     public void set(
@@ -35,13 +39,17 @@ public class Bullet extends Sprite {
         this.damage = damage;
     }
 
-    float limit = 0.1f;
     @Override
     public void update(float delta) {
         this.pos.mulAdd(v,delta);
         if(isOutside(worldBounds)){
             destroy();
         }
+    }
+
+    public void boom(){
+        Explosion explosion = explosionPool.obtain();
+        explosion.set(getHeight()*1.2f, pos);
     }
 
     public int getDamage() {

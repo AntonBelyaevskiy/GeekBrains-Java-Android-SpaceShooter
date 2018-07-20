@@ -1,24 +1,21 @@
 package ru.geekbrains.stargame.sprite;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Vector2;
-
 import ru.geekbrains.stargame.base.Sprite;
 import ru.geekbrains.stargame.math.Rect;
-import ru.geekbrains.stargame.math.Rnd;
 
-public class GameOver extends Sprite {
+public class GameMessage extends Sprite {
 
-    private Rect worldBounds;
+    float bottomMargin;
 
-    public GameOver(TextureRegion region, float height) {
+    public GameMessage(TextureRegion region, float height, float bottomMargin) {
         super(region);
         setHeightProportion(height);
+        this.bottomMargin = bottomMargin;
     }
 
     @Override
     public void resize(Rect worldBounds) {
-        this.worldBounds = worldBounds;
-        pos.set(-0.5f, 0);
+        pos.set(bottomMargin, 0);
     }
 }

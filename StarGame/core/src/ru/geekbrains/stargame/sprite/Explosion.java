@@ -33,7 +33,6 @@ public class Explosion extends Sprite {
                 destroy();
             }
         }
-
     }
 
     @Override

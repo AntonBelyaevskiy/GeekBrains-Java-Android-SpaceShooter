@@ -9,41 +9,53 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Align;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import ru.geekbrains.stargame.base.ActionListener;
 import ru.geekbrains.stargame.base.Base2DScreen;
+import ru.geekbrains.stargame.base.Font;
 import ru.geekbrains.stargame.math.Rect;
 import ru.geekbrains.stargame.math.Rnd;
+import ru.geekbrains.stargame.pools.AsteroidPool;
 import ru.geekbrains.stargame.pools.BulletPool;
 import ru.geekbrains.stargame.pools.EnemyPool;
 import ru.geekbrains.stargame.pools.ExplosionPool;
+import ru.geekbrains.stargame.sprite.Asteroid;
 import ru.geekbrains.stargame.sprite.Background;
 import ru.geekbrains.stargame.sprite.Bullet;
 import ru.geekbrains.stargame.sprite.ButtonNewGame;
 import ru.geekbrains.stargame.sprite.Enemy;
-import ru.geekbrains.stargame.sprite.Explosion;
-import ru.geekbrains.stargame.sprite.GameOver;
+import ru.geekbrains.stargame.sprite.GameMessage;
 import ru.geekbrains.stargame.sprite.MainShip;
 import ru.geekbrains.stargame.sprite.Star;
+import ru.geekbrains.stargame.utils.AsteroidEmitter;
 import ru.geekbrains.stargame.utils.EnemiesEmitter;
 
 public class GameScreen extends Base2DScreen implements ActionListener {
 
-    private enum State {GAME, GAME_OVER}
+    private enum State {PLAYING, GAME_OVER}
 
     private State state;
 
-    private static final int STARS_NUM = 60;
+    private static final int STARS_NUM = 70;
+    private static final float FONT_SIZE = 0.02f;
+
+    private static final float HEIGHT_GAME_OVER_BUTTON = 0.12f;
+    private static final float BUTTON_MARGIN_GAME_OVER_BUTTON = -0.5f;
 
     private Background background1;
     private Background background2;
 
     private Texture bg;
 
-    private TextureAtlas atlas;
+    private TextureAtlas atlasText;
+    private TextureAtlas mainShipAtlas;
+    private TextureAtlas atlasMain;
+    private TextureAtlas asteroidAtlas;
+
     private List<Star> stars;
 
     private MainShip mainShip;
@@ -51,8 +63,10 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     private BulletPool bulletPool;
     private EnemyPool enemyPool;
     private ExplosionPool explosionPool;
+    private AsteroidPool asteroidPool;
 
     private EnemiesEmitter enemiesEmitter;
+    private AsteroidEmitter asteroidEmitter;
 
     private Music backgroundMusic;
 
@@ -61,14 +75,19 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     private Sound enemyShipBulletSound;
 
     private ButtonNewGame buttonNewGame;
-    private static final float PRESS_SCALE = 0.9f;
-    private static final float BUTTON_HEIGHT = 0.05f;
 
-    private GameOver gameOver;
+    private GameMessage gameOver;
+
+    private Font font;
+    private StringBuilder sbFrags = new StringBuilder();
+    private StringBuilder sbHp = new StringBuilder();
+    private StringBuilder sbStage = new StringBuilder();
+
+    private int frags;
 
     GameScreen(Game game) {
         super(game);
-        state = State.GAME;
+        state = State.PLAYING;
     }
 
     @Override
@@ -87,23 +106,42 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         mainShipBulletSound = Gdx.audio.newSound(Gdx.files.internal("sounds/piu.wav"));
         enemyShipBulletSound = Gdx.audio.newSound(Gdx.files.internal("sounds/ph.wav"));
 
-        atlas = new TextureAtlas("textures/mainAtlas.tpack");
+        atlasMain = new TextureAtlas("textures/mainAtlas.tpack");
+        mainShipAtlas = new TextureAtlas("textures/mainShipAtlas.pack");
+        atlasText = new TextureAtlas("textures/text.pack");
+        asteroidAtlas = new TextureAtlas("textures/asteroidAtlas.pack");
 
-        gameOver = new GameOver(atlas.findRegion("message_game_over"), 0.1f);
+        gameOver = new GameMessage(atlasText.findRegion("game_over"), HEIGHT_GAME_OVER_BUTTON, BUTTON_MARGIN_GAME_OVER_BUTTON);
 
-        buttonNewGame = new ButtonNewGame(atlas, this, PRESS_SCALE);
-        buttonNewGame.setHeightProportion(BUTTON_HEIGHT);
-
-        TextureRegion starRegion = atlas.findRegion("star");
+        TextureRegion starRegion = atlasMain.findRegion("star");
         stars = new ArrayList<Star>();
         for (int i = 0; i < STARS_NUM; i++) {
             stars.add(new Star(starRegion, Rnd.nextFloat(-0.005f, 0.005f), Rnd.nextFloat(-0.5f, -0.1f), Rnd.nextFloat(0.0008f, 0.009f)));
         }
-        bulletPool = new BulletPool();
-        explosionPool = new ExplosionPool(atlas, explosionSound);
-        mainShip = new MainShip(atlas, bulletPool, explosionPool, mainShipBulletSound);
+        explosionPool = new ExplosionPool(atlasMain, explosionSound);
+        bulletPool = new BulletPool(explosionPool);
+        mainShip = new MainShip(mainShipAtlas, bulletPool, explosionPool, worldBounds, mainShipBulletSound);
         enemyPool = new EnemyPool(bulletPool, worldBounds, explosionPool, mainShip, enemyShipBulletSound);
-        enemiesEmitter = new EnemiesEmitter(worldBounds, enemyPool, atlas);
+        enemiesEmitter = new EnemiesEmitter(worldBounds, enemyPool, mainShipAtlas);
+
+        asteroidPool = new AsteroidPool(asteroidAtlas, worldBounds, explosionPool);
+        asteroidEmitter = new AsteroidEmitter(asteroidPool, worldBounds);
+
+        buttonNewGame = new ButtonNewGame(atlasText, this, worldBounds);
+
+        font = new Font("font/font.fnt", "font/font.png");
+        font.setWorldSize(FONT_SIZE);
+
+        startNewGame();
+    }
+
+    private void printInfo() {
+        sbFrags.setLength(0);
+        sbHp.setLength(0);
+        sbStage.setLength(0);
+        font.draw(batch, sbFrags.append("Frags: ").append(frags), worldBounds.getLeft(), worldBounds.getTop() - 0.01f);
+        font.draw(batch, sbHp.append("HP: ").append(mainShip.getHp()), worldBounds.pos.x, worldBounds.getTop() - 0.01f, Align.center);
+        font.draw(batch, sbStage.append("Stage: ").append(enemiesEmitter.getStage()), worldBounds.getRight(), worldBounds.getTop() - 0.01f, Align.right);
     }
 
     @Override
@@ -116,67 +154,56 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     }
 
     public void update(float delta) {
+        for (Star star : stars) {
+            star.update(delta);
+        }
+        bulletPool.updateActiveSprites(delta);
         switch (state) {
-            case GAME:
+            case PLAYING:
                 background1.update(delta);
                 background2.update(delta);
-                for (Star star : stars) {
-                    star.update(delta);
-                }
-                mainShip.update(delta);
-                bulletPool.updateActiveSprites(delta);
+                mainShip.update(delta, frags);
                 enemyPool.updateActiveSprites(delta);
-                explosionPool.updateActiveSprites(delta);
-                enemiesEmitter.generateEnemies(delta);
-                if(mainShip.isDestroyed()){
+                enemiesEmitter.generateEnemies(delta, frags);
+                asteroidEmitter.generateAsteroid(delta);
+                if (mainShip.isDestroyed()) {
                     state = State.GAME_OVER;
                     backgroundMusic.stop();
                 }
                 break;
             case GAME_OVER:
-                bulletPool.updateActiveSprites(delta);
-                explosionPool.updateActiveSprites(delta);
                 break;
         }
+        explosionPool.updateActiveSprites(delta);
+        asteroidPool.updateActiveSprites(delta);
     }
 
     private void draw() {
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        batch.begin();
+
+        background1.draw(batch);
+        background2.draw(batch);
+        for (Star star : stars) {
+            star.draw(batch);
+        }
+        bulletPool.drawActiveSprites(batch);
+        enemyPool.drawActiveSprites(batch);
+        asteroidPool.drawActiveSprites(batch);
 
         switch (state) {
-            case GAME:
-                Gdx.gl.glClearColor(0, 0, 0, 1);
-                Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-                batch.begin();
-                background1.draw(batch);
-                background2.draw(batch);
-                for (Star star : stars) {
-                    star.draw(batch);
-                }
+            case PLAYING:
                 mainShip.draw(batch);
-                bulletPool.drawActiveSprites(batch);
-                enemyPool.drawActiveSprites(batch);
-                explosionPool.drawActiveSprites(batch);
-                batch.end();
                 break;
             case GAME_OVER:
-                Gdx.gl.glClearColor(0, 0, 0, 1);
-                Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-                batch.begin();
-
-                background1.draw(batch);
-                background2.draw(batch);
-                for (Star star : stars) {
-                    star.draw(batch);
-                }
-                enemyPool.drawActiveSprites(batch);
-                bulletPool.drawActiveSprites(batch);
-                explosionPool.drawActiveSprites(batch);
-
                 gameOver.draw(batch);
                 buttonNewGame.draw(batch);
-                batch.end();
                 break;
         }
+        explosionPool.drawActiveSprites(batch);
+        printInfo();
+        batch.end();
     }
 
     @Override
@@ -189,20 +216,26 @@ public class GameScreen extends Base2DScreen implements ActionListener {
             star.resize(worldBounds);
         }
         mainShip.resize(worldBounds);
-        buttonNewGame.resize(worldBounds);
     }
 
     @Override
     public void dispose() {
         bg.dispose();
-        atlas.dispose();
+        atlasMain.dispose();
+        mainShipAtlas.dispose();
+        atlasText.dispose();
+        asteroidAtlas.dispose();
+
         bulletPool.dispose();
         enemyPool.dispose();
         explosionPool.dispose();
+        asteroidPool.dispose();
+
         backgroundMusic.dispose();
         explosionSound.dispose();
         mainShipBulletSound.dispose();
         enemyShipBulletSound.dispose();
+        font.dispose();
         super.dispose();
     }
 
@@ -254,7 +287,11 @@ public class GameScreen extends Base2DScreen implements ActionListener {
             }
             if (mainShip.isBulletCollision(bullet)) {
                 mainShip.damage(bullet.getDamage());
+                if (!mainShip.isDestroyed()) {
+                    bullet.boom();
+                }
                 bullet.destroy();
+
             }
         }
 
@@ -268,9 +305,64 @@ public class GameScreen extends Base2DScreen implements ActionListener {
                 }
                 if (enemy.isBulletCollision(bullet)) {
                     enemy.damage(bullet.getDamage());
+                    if (!enemy.isDestroyed()) {
+                        bullet.boom();
+                    }
                     bullet.destroy();
+                    if (enemy.isDestroyed()) {
+                        frags++;
+                        mainShip.upHp(1);
+                        break;
+                    }
                 }
             }
+        }
+
+        List<Asteroid> asteroidList = asteroidPool.getActiveObjects();
+        for (Asteroid asteroid : asteroidList) {
+            if (asteroid.isDestroyed()) {
+                continue;
+            }
+            if (mainShip.isAsteroidCollision(asteroid)) {
+                mainShip.damage(asteroid.getDamage());
+                asteroid.boom();
+                asteroid.destroy();
+            }
+            for (Enemy enemy : enemyList) {
+                if (enemy.isDestroyed()) {
+                    continue;
+                }
+                if (enemy.isAsteroidCollision(asteroid)) {
+                    enemy.damage(asteroid.getDamage());
+                    asteroid.boom();
+                    asteroid.destroy();
+                }
+            }
+        }
+
+        for (Bullet bullet : bulletList) {
+                if (bullet.isDestroyed()) {
+                    continue;
+                }
+                if (bullet.getOwner() == mainShip) {
+                    for(Asteroid asteroid : asteroidList){
+                        if (asteroid.isBulletMainShipCollision(bullet)) {
+                            bullet.boom();
+                            bullet.destroy();
+                        }
+                    }
+                }
+
+                for(Enemy enemy : enemyList){
+                    if (bullet.getOwner() == enemy) {
+                        for(Asteroid asteroid : asteroidList){
+                            if (asteroid.isBulletEnemyCollision(bullet)) {
+                                bullet.boom();
+                                bullet.destroy();
+                            }
+                        }
+                    }
+                }
         }
     }
 
@@ -278,13 +370,27 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         bulletPool.freeAllDestroyedActiveSprites();
         enemyPool.freeAllDestroyedActiveSprites();
         explosionPool.freeAllDestroyedActiveSprites();
+        asteroidPool.freeAllDestroyedActiveSprites();
     }
 
+
+    private void startNewGame() {
+        state = State.PLAYING;
+        frags = 0;
+
+        mainShip.setToNewGame();
+        enemiesEmitter.setToNewGame();
+
+        bulletPool.freeAllActiveSprites();
+        enemyPool.freeAllActiveSprites();
+        explosionPool.freeAllActiveSprites();
+        asteroidPool.freeAllActiveSprites();
+    }
 
     @Override
     public void actionPerformed(Object src) {
         if (src == buttonNewGame) {
-            game.setScreen(new GameScreen(game));
+            startNewGame();
         } else {
             throw new RuntimeException("Unknown src");
         }

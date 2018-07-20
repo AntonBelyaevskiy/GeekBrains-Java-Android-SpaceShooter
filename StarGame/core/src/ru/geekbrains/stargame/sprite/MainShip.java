@@ -1,11 +1,9 @@
 package ru.geekbrains.stargame.sprite;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.math.Vector2;
-
 import ru.geekbrains.stargame.base.Ship;
 import ru.geekbrains.stargame.math.Rect;
 import ru.geekbrains.stargame.pools.BulletPool;
@@ -13,10 +11,9 @@ import ru.geekbrains.stargame.pools.ExplosionPool;
 
 public class MainShip extends Ship {
 
-    public static final float SHIP_HEIGHT = 0.15f;
+    public static final float SHIP_HEIGHT = 0.3f;
     public static final float BOTTOM_MARGIN = 0.04f;
     private static final int INVALID_POINTER = -1;
-
 
     private Vector2 v0 = new Vector2(0.5f, 0f);
 
@@ -28,18 +25,28 @@ public class MainShip extends Ship {
 
     private boolean autoMode; //автоматический режим стрельбы включается кнопкой Q
 
-    public MainShip(TextureAtlas atlas, BulletPool bulletPool, ExplosionPool explosionPool, Sound sound) {
-        super(atlas.findRegion("main_ship"), 1, 2, 2, sound);
+    private int stage = 1;
+    private int newStageForAddHp = 2;
+
+    public MainShip(TextureAtlas atlas, BulletPool bulletPool, ExplosionPool explosionPool,  Rect worldBounds, Sound sound) {
+        super(atlas.findRegion("main_ship"), 1, 8, 8, worldBounds, sound);
         setHeightProportion(SHIP_HEIGHT);
         this.bulletPool = bulletPool;
         this.bulletRegion = atlas.findRegion("bulletMainShip");
+        this.autoMode = true;
+        this.explosionPool = explosionPool;
+        this.worldBounds = worldBounds;
+        setToNewGame();
+    }
+
+    public void setToNewGame(){
+        pos.x = worldBounds.pos.x;
         this.bulletHeight = 0.013f;
         this.bulletV.set(0, 0.8f);
         this.bulletDamage = 1;
         this.reloadInterval = 0.2f;
-        this.autoMode = true;
-        this.explosionPool = explosionPool;
         this.hp = 100;
+        flushDestrioy();
     }
 
     @Override
@@ -48,9 +55,15 @@ public class MainShip extends Ship {
         setBottom(worldBounds.getBottom() + BOTTOM_MARGIN);
     }
 
-    @Override
-    public void update(float delta) {
+    public void update(float delta, int frags) {
         super.update(delta);
+
+        stage = frags / 10 + 1;
+        if(stage == newStageForAddHp){
+            hp += stage * 10;
+            newStageForAddHp++;
+        }
+
         pos.mulAdd(v, delta);
         reloadTimer += delta;
         if(autoMode){
@@ -183,5 +196,9 @@ public class MainShip extends Ship {
                 || bullet.getBottom() > pos.y
                 || bullet.getTop() < getBottom());
 
+    }
+
+    public void upHp(int hp){
+        this.hp += hp;
     }
 }
