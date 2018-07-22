@@ -23,7 +23,7 @@ public class AsteroidEmitter {
     }
 
     public void generateAsteroid(float delta) {
-        v0 = new Vector2(0f, Rnd.nextFloat(-1.3f, -0.5f));
+        v0 = new Vector2(0f, Rnd.nextFloat(-1.3f, -0.4f));
         generateTimer += delta;
         if (generateTimer >= generateInterval) {
             generateTimer = 0f;

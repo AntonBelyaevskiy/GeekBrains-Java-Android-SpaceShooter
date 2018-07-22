@@ -267,13 +267,17 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     @Override
     public void touchDown(Vector2 touch, int pointer) {
         mainShip.touchDown(touch, pointer);
-        buttonNewGame.touchDown(touch, pointer);
+        if(state == State.GAME_OVER) {
+            buttonNewGame.touchDown(touch, pointer);
+        }
     }
 
     @Override
     public void touchUp(Vector2 touch, int pointer) {
         mainShip.touchUp(touch, pointer);
-        buttonNewGame.touchUp(touch, pointer);
+        if(state == State.GAME_OVER){
+            buttonNewGame.touchUp(touch, pointer);
+        }
     }
 
     private void checkCollision() {
