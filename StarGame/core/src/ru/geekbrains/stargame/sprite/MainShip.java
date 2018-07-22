@@ -187,7 +187,9 @@ public class MainShip extends Ship {
 
     @Override
     protected void shoot() {
-        super.shoot();
+        if(clearVisionForShoot) {
+            super.shoot();
+        }
     }
 
     public boolean isBulletCollision(Rect bullet) {
@@ -196,6 +198,10 @@ public class MainShip extends Ship {
                 || bullet.getBottom() > pos.y
                 || bullet.getTop() < getBottom());
 
+    }
+
+    public void setClearVisionForShoot(boolean clearVisionForShoot) {
+        this.clearVisionForShoot = clearVisionForShoot;
     }
 
     public void upHp(int hp){

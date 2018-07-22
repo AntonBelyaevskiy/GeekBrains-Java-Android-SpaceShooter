@@ -31,6 +31,8 @@ public class Ship extends Sprite {
 
     protected Sound shootSound;
 
+    protected boolean clearVisionForShoot = true;
+
     protected int hp;
 
 
@@ -65,10 +67,12 @@ public class Ship extends Sprite {
         this.worldBounds = worldBounds;
     }
 
+
+
     protected void shoot() {
-        Bullet bullet = bulletPool.obtain();
-        bullet.set(this, bulletRegion, pos, bulletV, bulletHeight, worldBounds, bulletDamage);
-        shootSound.play();
+            Bullet bullet = bulletPool.obtain();
+            bullet.set(this, bulletRegion, pos, bulletV, bulletHeight, worldBounds, bulletDamage);
+            shootSound.play();
     }
 
     public void boom() {

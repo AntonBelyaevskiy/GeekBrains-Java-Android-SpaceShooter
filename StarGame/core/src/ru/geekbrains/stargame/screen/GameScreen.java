@@ -23,17 +23,20 @@ import ru.geekbrains.stargame.pools.AsteroidPool;
 import ru.geekbrains.stargame.pools.BulletPool;
 import ru.geekbrains.stargame.pools.EnemyPool;
 import ru.geekbrains.stargame.pools.ExplosionPool;
+import ru.geekbrains.stargame.pools.FogPool;
 import ru.geekbrains.stargame.sprite.Asteroid;
 import ru.geekbrains.stargame.sprite.Background;
 import ru.geekbrains.stargame.sprite.Bullet;
 import ru.geekbrains.stargame.sprite.ButtonNewGame;
 import ru.geekbrains.stargame.sprite.Enemy;
+import ru.geekbrains.stargame.sprite.Fog;
 import ru.geekbrains.stargame.sprite.GameMessage;
 import ru.geekbrains.stargame.sprite.HpView;
 import ru.geekbrains.stargame.sprite.MainShip;
 import ru.geekbrains.stargame.sprite.Star;
 import ru.geekbrains.stargame.utils.AsteroidEmitter;
 import ru.geekbrains.stargame.utils.EnemiesEmitter;
+import ru.geekbrains.stargame.utils.FogEmitter;
 
 public class GameScreen extends Base2DScreen implements ActionListener {
 
@@ -58,6 +61,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     private TextureAtlas mainShipAtlas;
     private TextureAtlas atlasMain;
     private TextureAtlas asteroidAtlas;
+    private TextureAtlas fogAtlas;
 
     private List<Star> stars;
 
@@ -67,9 +71,11 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     private EnemyPool enemyPool;
     private ExplosionPool explosionPool;
     private AsteroidPool asteroidPool;
+    private FogPool fogPool;
 
     private EnemiesEmitter enemiesEmitter;
     private AsteroidEmitter asteroidEmitter;
+    private FogEmitter fogEmitter;
 
     private Music backgroundMusic;
 
@@ -116,6 +122,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         mainShipAtlas = new TextureAtlas("textures/mainShipAtlas.pack");
         atlasText = new TextureAtlas("textures/text.pack");
         asteroidAtlas = new TextureAtlas("textures/asteroidAtlas.pack");
+        fogAtlas = new TextureAtlas("textures/fogAtlas.pack");
 
         gameOver = new GameMessage(atlasText.findRegion("game_over"), HEIGHT_GAME_OVER_BUTTON, BUTTON_MARGIN_GAME_OVER_BUTTON);
 
@@ -132,6 +139,9 @@ public class GameScreen extends Base2DScreen implements ActionListener {
 
         asteroidPool = new AsteroidPool(asteroidAtlas, worldBounds, explosionPool);
         asteroidEmitter = new AsteroidEmitter(asteroidPool, worldBounds);
+
+        fogPool = new FogPool(fogAtlas, worldBounds);
+        fogEmitter = new FogEmitter(fogPool, worldBounds);
 
         buttonNewGame = new ButtonNewGame(atlasText, this, worldBounds);
 
@@ -173,7 +183,8 @@ public class GameScreen extends Base2DScreen implements ActionListener {
                 mainShip.update(delta, frags);
                 enemyPool.updateActiveSprites(delta);
                 enemiesEmitter.generateEnemies(delta, frags);
-                asteroidEmitter.generateAsteroid(delta);
+                asteroidEmitter.generateAsteroid(delta, frags);
+                fogEmitter.generateFog(delta);
                 hpView.update(delta);
                 if (mainShip.isDestroyed()) {
                     state = State.GAME_OVER;
@@ -185,6 +196,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         }
         explosionPool.updateActiveSprites(delta);
         asteroidPool.updateActiveSprites(delta);
+        fogPool.updateActiveSprites(delta);
     }
 
     private void draw() {
@@ -202,6 +214,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         enemyPool.drawActiveSprites(batch);
         asteroidPool.drawActiveSprites(batch);
 
+
         switch (state) {
             case PLAYING:
                 mainShip.draw(batch);
@@ -212,6 +225,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
                 buttonNewGame.draw(batch);
                 break;
         }
+        fogPool.drawActiveSprites(batch);
         explosionPool.drawActiveSprites(batch);
         printInfo();
         batch.end();
@@ -238,11 +252,13 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         mainShipAtlas.dispose();
         atlasText.dispose();
         asteroidAtlas.dispose();
+        fogAtlas.dispose();
 
         bulletPool.dispose();
         enemyPool.dispose();
         explosionPool.dispose();
         asteroidPool.dispose();
+        fogPool.dispose();
 
         backgroundMusic.dispose();
         explosionSound.dispose();
@@ -267,7 +283,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     @Override
     public void touchDown(Vector2 touch, int pointer) {
         mainShip.touchDown(touch, pointer);
-        if(state == State.GAME_OVER) {
+        if (state == State.GAME_OVER) {
             buttonNewGame.touchDown(touch, pointer);
         }
     }
@@ -275,7 +291,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
     @Override
     public void touchUp(Vector2 touch, int pointer) {
         mainShip.touchUp(touch, pointer);
-        if(state == State.GAME_OVER){
+        if (state == State.GAME_OVER) {
             buttonNewGame.touchUp(touch, pointer);
         }
     }
@@ -381,6 +397,15 @@ public class GameScreen extends Base2DScreen implements ActionListener {
                 }
             }
         }
+
+        List<Fog> fogList = fogPool.getActiveObjects();
+        for (Fog fog : fogList) {
+            if (fog.isDestroyed()) {
+                continue;
+            }
+            fog.isFogWithShipCollision(mainShip);
+        }
+
     }
 
     private void deleteAllDestroyed() {
@@ -388,6 +413,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         enemyPool.freeAllDestroyedActiveSprites();
         explosionPool.freeAllDestroyedActiveSprites();
         asteroidPool.freeAllDestroyedActiveSprites();
+        fogPool.freeAllDestroyedActiveSprites();
     }
 
 
@@ -402,6 +428,7 @@ public class GameScreen extends Base2DScreen implements ActionListener {
         enemyPool.freeAllActiveSprites();
         explosionPool.freeAllActiveSprites();
         asteroidPool.freeAllActiveSprites();
+        fogPool.freeAllActiveSprites();
     }
 
     @Override

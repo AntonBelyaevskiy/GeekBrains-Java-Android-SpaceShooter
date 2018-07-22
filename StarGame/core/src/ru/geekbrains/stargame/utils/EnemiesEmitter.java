@@ -37,7 +37,7 @@ public class EnemiesEmitter {
 
     Rect worldBounds;
 
-    private float generateInterval = 4f;
+    private float generateInterval = 3.9f;
     private float generateTimer;
 
     private TextureRegion[] enemySmallRegion;
