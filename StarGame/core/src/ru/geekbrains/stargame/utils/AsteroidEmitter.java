@@ -48,6 +48,7 @@ public class AsteroidEmitter {
             generateTimer = 0f;
             Asteroid asteroid = asteroidPool.obtain();
             asteroid.setBottom(worldBounds.getTop());
+            asteroid.setHeightProportion(Rnd.nextFloat(0.04f, 0.12f));
             asteroid.pos.x = Rnd.nextFloat(
                     worldBounds.getLeft() + asteroid.getHalfWidth(),
                     worldBounds.getRight() - asteroid.getHalfWidth());

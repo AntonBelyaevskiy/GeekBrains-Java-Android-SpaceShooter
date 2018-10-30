@@ -4,13 +4,14 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import ru.geekbrains.stargame.base.Sprite;
 import ru.geekbrains.stargame.math.Rect;
+import ru.geekbrains.stargame.math.Rnd;
 import ru.geekbrains.stargame.pools.ExplosionPool;
 
 public class Asteroid extends Sprite {
 
     private ExplosionPool explosionPool;
 
-    private static final float HEIGHT = 0.1f;
+
     private int damage;
     private Rect worldBounds;
     private Vector2 v;
@@ -23,7 +24,6 @@ public class Asteroid extends Sprite {
         this.explosionPool = explosionPool;
         this.worldBounds = worldBounds;
         damage = 5;
-        setHeightProportion(HEIGHT);
     }
 
     @Override
